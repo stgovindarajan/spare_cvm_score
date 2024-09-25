@@ -7,6 +7,7 @@ from .data_prep import logging_basic_config
 from .mlp import MLPModel
 from .mlp_torch import MLPTorchModel
 from .svm import SVMModel
+from .svm_cvm import SVMModel_CVM
 
 
 class SpareModel:
@@ -64,6 +65,16 @@ class SpareModel:
 
         if self.model_type == "SVM":
             self.model = SVMModel(
+                predictors,
+                target,
+                key_var,
+                verbose,
+                **parameters,
+            )
+        
+        elif self.model_type == "SVM_CVM":
+            print("Modeling SVM with SPARE-CVM config")
+            self.model = SVMModel_CVM(
                 predictors,
                 target,
                 key_var,

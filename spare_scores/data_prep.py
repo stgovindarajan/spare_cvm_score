@@ -410,3 +410,32 @@ def convert_cat_variables(df: pd.DataFrame, predictors: list, meta_data: Any) ->
                 + "categories are currently not supported."
             )
     return df, meta_data
+
+def prep_spare_cvm(df: pd.DataFrame,mdl_path: str):
+    df_params = pd.read_csv(os.path.join(mdl_path,'covparams_scaler_sparecvms.csv'))   
+    rois = df_params.loc[df_params['Features'].str.contains('Volume'),'Features']
+    meanage = 65.46632574098781
+    df['Age_Original'] = df['Age'].copy(deep=True)
+    df['Mean_centered_age'] = df['Age_Original']-meanage
+    df['DLICV_Original'] = df['DLICV'].copy(deep=True)
+    df['Sex_M'] = df['Sex'].map({'F':0,'M':1})
+
+    features = ['Age','DLICV',] + [roi for roi in rois ]
+
+    confounds = ['Sex_M', 'Mean_centered_age', 'DLICV']
+
+    for roi in rois:
+        
+        df['Orig_'+roi] = df[roi].copy(deep=True)
+        df['Pred_'+roi] = df_params.loc[df_params['Features']==roi,'Intercept'].values+np.matmul(df[confounds],df_params.loc[df_params['Features']==roi,confounds].to_numpy().reshape(-1))
+        df[roi] =  df['Orig_'+roi]-df['Pred_'+roi] 
+
+
+    for ft in features:
+        df[ft] = (df[ft] - df_params.loc[df_params['Features']==ft,'Scaler_Mean'].values)/np.sqrt(df_params.loc[df_params['Features']==ft,'Scaler_Var'].values)
+
+    df = df.drop(columns=df.columns[df.columns.str.startswith('Pred')])
+
+    features = features + ['Sex',]
+
+    return df, features
